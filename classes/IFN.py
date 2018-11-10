@@ -299,6 +299,7 @@ class StartSimulation(tk.Frame):
         self.createCanvas(self)
 
         self.node_ctr = 1
+        self.link_ctr = 1
 
     def showNetworkDetails(self):
         self.showNetwork["text"] = "Hide Network Details"
@@ -325,7 +326,7 @@ class StartSimulation(tk.Frame):
         self.c.pack(fill='both', expand=True)    
 
         bt = tk.Button(master, text="Print Nodes", command = lambda: self.getNodesList(tk.Tk()))
-        bt2 = tk.Button(master, text="Print Links", command = lambda: self.getLinksList())
+        bt2 = tk.Button(master, text="Print Links", command = lambda: self.getLinksList(tk.Tk()))
         bt.pack(pady = 10, padx = 10)
         bt2.pack(pady = 10, padx = 10)
 
@@ -333,8 +334,12 @@ class StartSimulation(tk.Frame):
         self.c.bind("<B1-Motion>", self.addLink)
         self.c.bind("<Button-1>", self.getOrigin)
         self.c.bind("<ButtonRelease-1>", self.getFinal)
-        self.c.bind("<Button-3>", self.selectObject)
+        self.c.tag_bind("node", "<Button-3>", self.startMove)
         self.c.tag_bind("node", "<B3-Motion>", self.moveObject)
+        self.c.tag_bind("node", "<ButtonRelease-3>", self.stopMove)
+
+        self.ovals = {}
+        self.selected = None
 
     def getNodesList(self, edit):
         #return self.network.getNodesList()
@@ -362,7 +367,6 @@ class StartSimulation(tk.Frame):
         lb_nodeLat.grid(row = 0, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
         lb_nodeActions.grid(row = 0, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
 
-        fr_tableheaders.pack(pady = 10, padx = 10)
         btn = []
         for i in range(len(nodeslist)):
             nodeID = nodeslist[i].getID()
@@ -412,27 +416,108 @@ class StartSimulation(tk.Frame):
         widgetid = self.network.getNodeById(node_id).getWidgetId()
         self.c.delete(widgetid)
         self.c.delete(widgetid+1)
+
+        links = self.network.getLinksByNodeId(node_id)
+        for i in range(len(links)):
+            self.c.delete(links[i].getWidgetId())
+
         self.network.deleteNode(node_id)
         master.destroy()
         self.getNodesList(tk.Tk())
     
-    def getLinksList(self):
+    def getLinksList(self, edit):
         #return self.network.getLinksList()
         #print(self.network.getLinksList())
+
+        edit.destroy()
 
         popup = tk.Tk()
 
         popup.wm_title("Links List")
 
-        nodeslist = self.network.getLinksList()
+        linkslist = self.network.getLinksList()
 
-        label = ""
+        fr_tableheaders = tk.Frame(popup)
 
-        for i in range(len(nodeslist)):
-            label = label + nodeslist[i].getName() + "\n"
+        lb_linkID = ttk.Label(fr_tableheaders, text="ID", font=NORM_FONT)
+        lb_linkName = ttk.Label(fr_tableheaders, text="Name", font=NORM_FONT)
+        lb_linkNodeA = ttk.Label(fr_tableheaders, text="Node A", font=NORM_FONT)
+        lb_linkNodeB = ttk.Label(fr_tableheaders, text="Node B", font=NORM_FONT)
+        lb_linkDirection = ttk.Label(fr_tableheaders, text="Direction", font=NORM_FONT)
+        lb_linkCapacity = ttk.Label(fr_tableheaders, text="Capacity", font=NORM_FONT)
+        lb_linkDistance = ttk.Label(fr_tableheaders, text="Distance", font=NORM_FONT)
+        lb_linkActions = ttk.Label(fr_tableheaders, text="Actions", font=NORM_FONT)
 
-        label_list = ttk.Label(popup, text=label, font=NORM_FONT)
-        label_list.pack(pady = 10, padx = 10)
+        lb_linkID.grid(row = 0, column = 0, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkName.grid(row = 0, column = 2, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkNodeA.grid(row = 0, column = 4, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkNodeB.grid(row = 0, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkDirection.grid(row = 0, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkCapacity.grid(row = 0, column = 10, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkDistance.grid(row = 0, column = 12, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_linkActions.grid(row = 0, column = 14, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+        btn = []
+        for i in range(len(linkslist)):
+            activeLink = linkslist[i]
+            linkID = activeLink.getID()
+            linkName = activeLink.getName()
+            linkWidget = activeLink.getWidgetId()
+            linkNodeA = activeLink.getNodeA()
+            linkNodeB = activeLink.getNodeB()
+            linkDirection = activeLink.getDirection()
+            linkCapacity = activeLink.getCapacity()
+            linkDistance = activeLink.getDistance()
+            
+            print(type(linkNodeA), type(linkNodeB))
+            tb_linkID = ttk.Entry(fr_tableheaders)
+            tb_linkID.insert(0,linkID)
+            tb_linkID.configure(state="readonly")
+
+            tb_linkName = ttk.Entry(fr_tableheaders)
+            tb_linkName.insert(0,linkName)
+            tb_linkName.configure(state="readonly")
+
+            tb_linkNodeA = ttk.Entry(fr_tableheaders)
+            tb_linkNodeA.insert(0,linkNodeA.getName())
+            tb_linkNodeA.configure(state="readonly")
+
+            tb_linkNodeB = ttk.Entry(fr_tableheaders)
+            tb_linkNodeB.insert(0,linkNodeB.getName())
+            tb_linkNodeB.configure(state="readonly")
+
+            tb_linkDirection = ttk.Entry(fr_tableheaders)
+            tb_linkDirection.insert(0,linkDirection)
+            tb_linkDirection.configure(state="readonly")
+
+            tb_linkCapacity = ttk.Entry(fr_tableheaders)
+            tb_linkCapacity.insert(0,linkCapacity)
+            tb_linkCapacity.configure(state="readonly")
+
+            tb_linkDistance = ttk.Entry(fr_tableheaders)
+            tb_linkDistance.insert(0,linkDistance)
+            tb_linkDistance.configure(state="readonly")
+
+            tb_linkID.grid(row = i+1, column = 0, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkName.grid(row = i+1, column = 2, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkNodeA.grid(row = i+1, column = 4, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkNodeB.grid(row = i+1, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkDirection.grid(row = i+1, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkCapacity.grid(row = i+1, column = 10, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_linkDistance.grid(row = i+1, column = 12, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+            fr_actions = tk.Frame(fr_tableheaders)
+            btn2 = []
+            btn2.append(tk.Button(fr_actions, text = "Edit", command = lambda c=linkID: self.linkPopup(popup,c)))
+            btn2.append(tk.Button(fr_actions, text = "Delete", command = lambda c=linkID: self.deleteLink(popup,c)))
+            btn.append(btn2)
+            btn2[0].grid(row = 0, column = 0, padx = 10)
+            btn2[1].grid(row = 0, column = 1, padx = 10)
+            fr_actions.grid(row = i+1, column = 14, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+            #self.c.coords(linkWidget, linkLongitude-10, linkLatitude-10, linkLongitude+10, linkLatitude+10)
+
+        fr_tableheaders.pack(pady = 10, padx = 10)
 
         popup.mainloop()
 
@@ -448,8 +533,8 @@ class StartSimulation(tk.Frame):
         height = coord[3] - coord[1]
 
         self.c.coords(node_id, event.x - (width / 2) - 7, event.y - (height / 2) - 7, event.x+width, event.y+height)
-        self.c.create_text(event.x , event.y, text = self.node_ctr, state = tk.NORMAL, tags = node_id)
-
+        self.c.create_text(event.x , event.y, text = self.node_ctr, state = tk.NORMAL, tags = 'node')
+        self.ovals[node_id] = self.c.coords(node_id)
         if self.network.getNodeById(node_id) is None:
             name = "Node %s" % self.node_ctr
             lat = event.y
@@ -511,44 +596,43 @@ class StartSimulation(tk.Frame):
 
         popup.mainloop()
 
-    def LinkPopup(self, id, name, node1, node2):
+    def linkPopup(self, master, id):
         popup = tk.Tk()
 
-        def savelink(id, name, node1, node2, capacity, distance):
-            self.c.itemconfigure(link_id, width = capacity, arrow=tk.LAST)
-            self.c.create_text(self.c.coords(link_id)[0] + ((self.c.coords(link_id)[2] - self.c.coords(link_id)[0])/2), self.c.coords(link_id)[1] + ((self.c.coords(link_id)[3] - self.c.coords(link_id)[1])/2), text = name)
-            self.network.createLink(id, name, int(node1), int(node2))
-            self.network.getLinkById(id).addProperties(capacity, distance)
-            popup.destroy()
+        active = self.network.getLinkById(id)
 
-        def cancellink(id):
-            self.c.delete(id)
-            popup.destroy()
+        def savelink(active_id, entry_id, widget_id, name, node1, node2, direction, capacity, distance):
+            self.c.itemconfigure(link_id, width = capacity, arrow=tk.LAST)
+            node1 = self.network.getNodeById(int(node1))
+            node2 = self.network.getNodeById(int(node2))
+            self.network.updateLink(active_id, entry_id, widget_id, name, node1, node2, direction, capacity, distance)
+            master.destroy()
+            self.getLinksList(popup)
 
         popup.wm_title("Link Properties")
 
         label_id = ttk.Label(popup, text = "Link ID: ", font = NORM_FONT, anchor = tk.W)
         entry_id = ttk.Entry(popup)
-        entry_id.insert(0, id)
+        entry_id.insert(0, active.getID())
         entry_id.config(state=tk.DISABLED)
         label_id.grid(row=0)
         entry_id.grid(row=0, column=1)
 
         label_name = ttk.Label(popup, text = "Link Name: ", font = NORM_FONT, anchor = tk.W)
         entry_name = ttk.Entry(popup)
-        entry_name.insert(0, name)
+        entry_name.insert(0, active.getName())
         label_name.grid(row=1)
         entry_name.grid(row=1, column=1)
 
         label_long = ttk.Label(popup, text = "Start Node: ", font = NORM_FONT, anchor = tk.W)
         entry_long = ttk.Entry(popup)
-        entry_long.insert(0, node1)
+        entry_long.insert(0, active.getNodeA().getName())
         label_long.grid(row=2)
         entry_long.grid(row=2, column=1)
 
         label_lat = ttk.Label(popup, text = "End Node: ", font = NORM_FONT, anchor = tk.W)
         entry_lat = ttk.Entry(popup)
-        entry_lat.insert(0, node2)
+        entry_lat.insert(0, active.getNodeB().getName())
         label_lat.grid(row=3)
         entry_lat.grid(row=3, column=1)
 
@@ -558,80 +642,81 @@ class StartSimulation(tk.Frame):
         lb_weight = ttk.Label(sep, text = "Capacity: ", font = NORM_FONT, anchor = tk.W)
         lb_weight.grid(row=2)
         tb_weight = ttk.Entry(sep)
-        tb_weight.insert(0, 1)
+        tb_weight.insert(0, active.getCapacity())
         tb_weight.grid(row=2, column=1, columnspan = 2)
 
         lb_dist = ttk.Label(sep, text = "Distance: ", font = NORM_FONT, anchor = tk.W)
         lb_dist.grid(row=1)
         tb_dist = ttk.Entry(sep)
+        tb_dist.insert(0, active.getDistance())
         tb_dist.grid(row=1, column=1, columnspan=2)
         
 
-        B1 = ttk.Button(popup, text="Save", command = lambda: savelink(entry_id.get(), entry_name.get(), entry_long.get(), entry_lat.get(), tb_weight.get(), tb_dist.get()))
+        B1 = ttk.Button(popup, text="Save", command = lambda: savelink(active.getID(), entry_id.get(), active.getWidgetId(), entry_name.get(), entry_long.get(), entry_lat.get(), active.getDistance(), tb_weight.get(), tb_dist.get()))
         B1.grid(row=7, column=0)
-        B2 = ttk.Button(popup, text="Cancel", command = lambda: cancellink(entry_id.get()))
+        B2 = ttk.Button(popup, text="Cancel", command = popup.destroy)
         B2.grid(row=7, column=1)
 
         popup.mainloop()
 
-    def addLink(self, event):
-        global link_id
-        
-        if self.c.find_withtag(tk.CURRENT) and self.c.type(tk.CURRENT) == "oval":
-            coord = self.c.coords(tk.CURRENT)
-            width = coord[2] - coord[0]
-            height = coord[3] - coord[1]
-            init_x = coord[2] - (width / 2)
-            init_y = coord[3] - (height / 2)
-            
-            link_id = self.c.create_line(init_x,init_y,init_x,init_y, tags='link', arrow = tk.LAST)
-                #self.c.delete(self.link_id)
-        else:
-            pass
-
-        while(event.type=="Motion"):
-            self.c.coords(link_id, init_x, init_y, event.x, event.y)
-    
+    def deleteLink(self, master, link_id):
+        widgetid = self.network.getLinkById(link_id).getWidgetId()
+        self.c.delete(widgetid)
+        self.network.deleteLinkById(link_id)
+        master.destroy()
+        self.getLinksList(tk.Tk())
+   
     def getOrigin(self, event):
-        global init_x, init_y, origin_node, link_id
+        global init_x, init_y, origin_widget_node, link_id, btn1pressed, origin_node
         
+        btn1pressed = True
         init_x = None
         init_y = None
-        origin_node = None
+        origin_widget_node = None
         link_id = None
+        origin_node = None
         
-        if self.c.find_withtag(tk.CURRENT) and self.c.type(tk.CURRENT) == "oval":
-            coord = self.c.coords(tk.CURRENT)
-            width = coord[2] - coord[0]
-            height = coord[3] - coord[1]
+        # Find all clicked items
+        self.selected = self.c.find_overlapping(event.x, event.y, event.x, event.y)
+        # Get first selected item
+        origin_widget_node = self.selected[0]
+        origin_node = self.c.itemcget(self.selected[0]+1, 'text')
+        coord = self.c.coords(origin_widget_node)
+        width = coord[2] - coord[0]
+        height = coord[3] - coord[1]
+        if(self.c.type(origin_widget_node) == "oval"):
             init_x = coord[2] - (width / 2)
             init_y = coord[3] - (height / 2)
-            origin_node = self.c.find_closest(event.x, event.y)
-            self.origin_node = origin_node[0]
-            #self.link_id = self.c.create_line(init_x,init_y,init_x,init_y, arrow=tk.LAST, arrowshape='30 84 60')
-            #print("start: ", init_x, " ", init_y, " Node ID: ", self.origin_node, " Line ID: ", link_id, " Event Type: ", event.type)
-        elif self.c.find_withtag('link'):
-            pass
+            link_id = self.c.create_line(init_x, init_y, init_x, init_y)
         else:
             pass
-            #print(self.c.type(tk.CURRENT))
-        
+    
+    def addLink(self, event):
+        if btn1pressed == True:
+            self.c.coords(link_id, init_x, init_y, event.x, event.y)
+    
     def getFinal(self, event):
-        global end_x, end_y, end_node
+        global end_x, end_y, end_widget_node, btn1pressed, end_node
         
+        btn1pressed = False
         end_x = None
         end_y = None
-        
+        end_widget_node = None
         end_node = None
-        
-        if self.c.find_withtag(tk.CURRENT) and self.c.type(tk.CURRENT) == "oval":
-            coord = self.c.coords(tk.CURRENT)
+
+        # Find all clicked items
+        self.selected = self.c.find_overlapping(event.x, event.y, event.x, event.y)
+        # Get first selected item
+        if(len(self.selected) >= 2):
+            end_widget_node = self.selected[0]
+            end_node = self.c.itemcget(self.selected[0]+1, 'text')
+            coord = self.c.coords(end_widget_node)
             width = coord[2] - coord[0]
             height = coord[3] - coord[1]
-            end_x = coord[2] - (width / 2)
-            end_y = coord[3] - (height / 2)
-            
-            if link_id != None:
+            if(self.c.type(end_widget_node) == "oval"):
+                print(end_node, end_widget_node)
+                end_x = coord[2] - (width / 2)
+                end_y = coord[3] - (height / 2)
                 delta_y = end_y - init_y
                 delta_x = end_x - init_x
                 
@@ -677,47 +762,47 @@ class StartSimulation(tk.Frame):
                 
                 self.c.coords(link_id,init_x, init_y, end_x, -1 * end_y)
                 self.c.tag_lower(link_id)
-                self.end_node = self.c.find_closest(event.x, event.y)
 
-                if self.network.getLinkById(link_id) is None:
-                    name = ""
-                    start = origin_node
-                    end = self.end_node[0]
-                    self.LinkPopup(link_id, name, start, end)
+                name = "Link %s" % self.link_ctr
+                node1 = origin_node
+                node2 = end_node
 
-                elif self.network.getLinkById(link_id) is not None:
-                    name = self.network.getLinkById(link_id).getName()
-                    start = self.network.getLinkById(link_id).getStartNode()
-                    end = self.network.getLinkById(link_id).getEndNode()
-                    self.LinkPopup(link_id, name, start, end)
-            else:
-                pass
-        elif self.c.find_withtag(tk.CURRENT) and self.c.type(tk.CURRENT) == "line":
-            #print(self.c.find_closest(event.x, event.y, halo = 10))
-            #self.c.delete(self.c.find_closest(event.x, event.y))
-            pass
-        else:
-            pass
+                #print(type(self.network.getNodeById(node1)), type(self.network.getNodeById(node2)))
+                self.network.createLink(self.link_ctr, link_id, name, int(node1), int(node2))
+
+                self.link_ctr += 1
+            else: self.c.delete(link_id)
+        else: self.c.delete(link_id)
         
     def checkObject(self, event):
         if self.c.find_withtag(tk.CURRENT):
             #self.c.itemconfigure(tk.CURRENT)
             pass
         
-    def selectObject(self, event):
-        if self.c.find_withtag(tk.CURRENT):
-            if self.c.type(tk.CURRENT) == "oval":
-                self.c.itemconfig(tk.CURRENT, fill="blue", outline="orange")
-                self.c.update_idletasks()
-            elif self.c.type(tk.CURRENT) == "line":
-                self.c.itemconfig(tk.CURRENT, )
-                
-    def moveObject(self, event):
-        if self.c.find_withtag(tk.CURRENT):
-            pass
+    def startMove(self, event):
+        # find all clicked items
+        self.selected = self.c.find_overlapping(event.x, event.y, event.x, event.y)
+        # get first selected item
+        self.selected = self.selected[0]
+        self.c.itemconfigure(self.selected+1, state = tk.HIDDEN)
 
-    def addNodeValue(self, id):
-        pass
+    def moveObject(self, event):
+        # move selected item
+        self.c.coords(self.selected, event.x-10, event.y-10, event.x+10,event.y+10)
+
+    def stopMove(self, event):
+        # delete or release selected item
+        if 100 < event.x < 300 and 250 < event.y < 350:
+            self.c.delete(self.selected)
+            del self.ovals[self.selected]
+        else:
+            self.c.coords(self.selected, event.x-10, event.y-10, event.x+10,event.y+10)
+            self.c.coords(self.selected+1, event.x, event.y)
+            self.c.itemconfigure(self.selected+1, state = tk.NORMAL)
+            node_id = self.c.itemcget(self.selected+1, 'text')
+            self.network.updateNodeCoords(int(node_id), event.x, event.y)
+        # clear it so you can use it to check if you are draging item
+        self.selected = None
 
 class SearchLocation(tk.Frame):
     def __init__ (self, parent, controller):

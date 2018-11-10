@@ -16,17 +16,12 @@ class Network:
         self.nodes.append(nd.Node(id, object_id, name, longitude, latitude))
 
     # Creates link between two nodes in the network and append to Links list
-    def createLink(self, id, name, node1, node2):
-        start = None
-        end = None
+    def createLink(self, id, object_id, name, node1, node2):
+        start = self.getNodeById(node1)
+        end = self.getNodeById(node2)
 
-        for i in range(0, len(self.nodes)):
-            if (self.nodes[i].getID() == node1):
-                start = i
-            elif (self.nodes[i].getID() == node2):
-                end = i
-
-        self.links.append(lk.Link(id, name, self.nodes[start], self.nodes[end]))
+        self.links.append(lk.Link(id, object_id, name, start, end, 2, 10, 10))
+        print("Link Registered")
 
     # Returns the entire list of nodes in the network
     def getNodesList(self):
@@ -66,7 +61,7 @@ class Network:
     def deleteLinkByNode(self, node_ID):
         delete = []
         for i in range(0, len(self.links)):
-            if (self.links[i].getStartNode().getID() == node_ID or self.links[i].getEndNode().getID() == node_ID):
+            if (self.links[i].getNodeA().getID() == node_ID or self.links[i].getNodeB().getID() == node_ID):
                 delete.append(i)
                 
         for i in range(len(delete) - 1, -1, -1):
@@ -92,3 +87,27 @@ class Network:
             pass
         else:
             active_node.updateNode(id, object_id, name, longitude, latitude)
+
+    # Update Node Coordinates
+    def updateNodeCoords(self, id, longitude, latitude):
+        active_node = self.getNodeById(id)
+        active_node.updateCoords(longitude, latitude)
+
+    # Update Link Properties
+    def updateLink(self, active_id, id, object_id, name, node1, node2, direction, capacity, distance):
+        temp_link = lk.Link(id, object_id, name, node1, node2, direction, capacity, distance)
+        active_link = self.getLinkById(active_id)
+
+        if(temp_link.getAllProperties() == active_link.getAllProperties()):
+            pass
+        else:
+            active_link.updateLink(id, object_id, name, node1, node2, direction, capacity, distance)
+
+    # Get links connected to nodes
+    def getLinksByNodeId(self, node_ID):
+        edges = []
+        for i in range(0, len(self.links)):
+            if (self.links[i].getNodeA().getID() == node_ID or self.links[i].getNodeB().getID() == node_ID):
+                edges.append(self.links[i])
+        
+        return edges

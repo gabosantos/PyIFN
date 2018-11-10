@@ -13,6 +13,10 @@ class Node:
         self.name = name
         self.long = longitude
         self.lat = latitude
+
+    def updateCoords(self, longitude, latitude):
+        self.long = longitude
+        self.lat = latitude
         
     def getAllProperties(self):
         return ("Node ID: ", self.id, "\nWidget ID: ", self.widget_id,"Node Name: ", self.name, "\nLongtitude: ", self.long, "\nLatitude: ", self.lat)
