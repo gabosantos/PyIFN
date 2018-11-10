@@ -20,6 +20,7 @@ class RoadNetworkSimulator(tk.Tk):
     def __init__(self, *args, **kwargs):
         
         tk.Tk.__init__(self, *args, **kwargs)
+        self.attributes("-fullscreen", True)
         self.title("Road Network Simulator")
         self.menuBar(self)
         container = tk.Frame(self)
@@ -58,7 +59,7 @@ class RoadNetworkSimulator(tk.Tk):
         mn_fileMenu.add_command(label = "Save")
         mn_fileMenu.add_command(label = "Save as...")
         mn_fileMenu.add_separator()
-        mn_fileMenu.add_command(label = "Exit", command = "")
+        mn_fileMenu.add_command(label = "Exit", command = self.destroy)
         mn_menuBar.add_cascade(label = "File", menu = mn_fileMenu)
 
         # Edit Menu
@@ -297,6 +298,8 @@ class StartSimulation(tk.Frame):
 
         self.createCanvas(self)
 
+        self.node_ctr = 1
+
     def showNetworkDetails(self):
         self.showNetwork["text"] = "Hide Network Details"
         self.showNetwork["command"] = lambda: self.hideNetworkDetails()
@@ -321,7 +324,7 @@ class StartSimulation(tk.Frame):
         self.c = tk.Canvas(master, bg = "white")
         self.c.pack(fill='both')    
 
-        bt = tk.Button(master, text="Print Nodes", command = lambda: self.getNodesList())
+        bt = tk.Button(master, text="Print Nodes", command = lambda: self.getNodesList(tk.Tk()))
         bt2 = tk.Button(master, text="Print Links", command = lambda: self.getLinksList())
         bt.pack(pady = 10, padx = 10)
         bt2.pack(pady = 10, padx = 10)
@@ -332,31 +335,12 @@ class StartSimulation(tk.Frame):
         self.c.bind("<ButtonRelease-1>", self.getFinal)
         self.c.bind("<Button-3>", self.selectObject)
         self.c.tag_bind("node", "<B3-Motion>", self.moveObject)
-        #self.c.tag_bind("node", "<Any-Enter>", self.mouseEnter)
-        #self.c.tag_bind("node", "<Any-Leave>", self.mouseLeave)
 
-    def mouseEnter(self, event):
-        # the CURRENT tag is applied to the object the cursor is over.
-        # this happens automatically.
-        self.c.itemconfig(tk.CURRENT, fill="blue")
-        try:
-            self.c.itemconfig(self.c.find_above(tk.CURRENT)[0], state = tk.NORMAL)
-        except:
-            pass
-
-    def mouseLeave(self, event):
-        # the CURRENT tag is applied to the object the cursor is over.
-        # this happens automatically.
-        self.c.itemconfig(tk.CURRENT, fill="orange")
-        try:
-            self.c.itemconfig(self.c.find_above(tk.CURRENT)[0], state = tk.HIDDEN)
-            pass
-        except:
-            pass        
-
-    def getNodesList(self):
+    def getNodesList(self, edit):
         #return self.network.getNodesList()
         #print(self.network.getNodesList())
+
+        edit.destroy()
 
         popup = tk.Tk()
 
@@ -364,15 +348,50 @@ class StartSimulation(tk.Frame):
 
         nodeslist = self.network.getNodesList()
 
-        label = ""
+        fr_tableheaders = tk.Frame(popup)
 
-        numcols = len(nodeslist[0])
+        lb_nodeID = ttk.Label(fr_tableheaders, text="ID", font=NORM_FONT)
+        lb_nodeName = ttk.Label(fr_tableheaders, text="Name", font=NORM_FONT)
+        lb_nodeLong = ttk.Label(fr_tableheaders, text="Dim_X", font=NORM_FONT)
+        lb_nodeLat = ttk.Label(fr_tableheaders, text="Dim_Y", font=NORM_FONT)
+        lb_nodeActions = ttk.Label(fr_tableheaders, text="Actions", font=NORM_FONT)
 
+        lb_nodeID.grid(row = 0, column = 0, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_nodeName.grid(row = 0, column = 2, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_nodeLong.grid(row = 0, column = 4, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_nodeLat.grid(row = 0, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+        lb_nodeActions.grid(row = 0, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+        fr_tableheaders.pack(pady = 10, padx = 10)
+        btn = []
         for i in range(len(nodeslist)):
-            label = label + numcols + " " + nodeslist[i].getAllProperties() + "\n"
+            tb_nodeID = ttk.Entry(fr_tableheaders)
+            tb_nodeID.insert(0,nodeslist[i].getID())
+            tb_nodeID.configure(state="readonly")
 
-        label_list = ttk.Label(popup, text=label, font=NORM_FONT)
-        label_list.pack(pady = 10, padx = 10)
+            tb_nodeName = ttk.Entry(fr_tableheaders)
+            tb_nodeName.insert(0,nodeslist[i].getName())
+            tb_nodeName.configure(state="readonly")
+
+            tb_nodeLong = ttk.Entry(fr_tableheaders)
+            tb_nodeLong.insert(0,nodeslist[i].getLongitude())
+            tb_nodeLong.configure(state="readonly")
+
+            tb_nodeLat = ttk.Entry(fr_tableheaders)
+            tb_nodeLat.insert(0,nodeslist[i].getLatitude())
+            tb_nodeLat.configure(state="readonly")
+
+            tb_nodeID.grid(row = i+1, column = 0, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_nodeName.grid(row = i+1, column = 2, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_nodeLong.grid(row = i+1, column = 4, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+            tb_nodeLat.grid(row = i+1, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+            fr_actions = tk.Frame(fr_tableheaders)
+            btn.append(tk.Button(fr_actions, text = "Edit", command = lambda c=nodeslist[i].getID(): self.nodePopup(popup,c)))
+            btn[i].pack(padx = 10)
+            fr_actions.grid(row = i+1, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+        fr_tableheaders.pack(pady = 10, padx = 10)
 
         popup.mainloop()
 
@@ -401,67 +420,70 @@ class StartSimulation(tk.Frame):
         
         node_id = self.c.create_oval(10, 10, 20, 20, fill='orange', outline='blue', tags='node')
         
+
         #if object_id is not None:
         coord = self.c.coords(node_id)
         width = coord[2] - coord[0]
         height = coord[3] - coord[1]
 
         self.c.coords(node_id, event.x - (width / 2) - 7, event.y - (height / 2) - 7, event.x+width, event.y+height)
+        self.c.create_text(event.x , event.y, text = self.node_ctr, state = tk.NORMAL, tags = node_id)
 
         if self.network.getNodeById(node_id) is None:
-            name = ""
+            name = "Node %s" % self.node_ctr
             lat = event.y
             lng = event.x
-            self.nodePopup(node_id, name, lng, lat)
+            self.network.createNode(self.node_ctr, node_id, name, lng, lat)
+            
 
         elif self.network.getNodeById(node_id) is not None:
             name = self.network.getNodeById(node_id).getName()
             lat = self.network.getNodeById(node_id).getLatitude()
             lng = self.network.getNodeById(node_id).getLongitude()
-            self.nodePopup(node_id, name, lng, lat)
+            self.network.createNode(self.node_ctr, node_id, name, lng, lat)
+
+        self.node_ctr += 1
             
-    def nodePopup(self, id, name, lng, lat):
+    def nodePopup(self, master, id):
         popup = tk.Tk()
 
-        def savenode(id, name, lng, lat):
-            self.c.create_text(self.c.coords(node_id)[2] - ((self.c.coords(node_id)[2] - self.c.coords(node_id)[0])/2), self.c.coords(node_id)[3], text = name, state = tk.HIDDEN, tags = name)
-            self.network.createNode(id, name, lng, lat)
-            popup.destroy()
+        active = self.network.getNodeById(id)
 
-        def cancelnode(id):
-            self.c.delete(id)
-            popup.destroy()
+        def savenode(active_id, entry_id, widget_id, name, lng, lat):
+            self.network.updateNode(active.getID(), entry_id, widget_id, name, lng, lat)
+            master.destroy()
+            self.getNodesList(popup)
 
         popup.wm_title("Node Properties")
 
         label_id = ttk.Label(popup, text = "Node ID: ", font = NORM_FONT, anchor = tk.W)
         entry_id = ttk.Entry(popup)
-        entry_id.insert(0, id)
+        entry_id.insert(0, active.getID())
         entry_id.config(state=tk.DISABLED)
         label_id.grid(row=0)
         entry_id.grid(row=0, column=1)
 
         label_name = ttk.Label(popup, text = "Node Name: ", font = NORM_FONT, anchor = tk.W)
         entry_name = ttk.Entry(popup)
-        entry_name.insert(0, name)
+        entry_name.insert(0, active.getName())
         label_name.grid(row=1)
         entry_name.grid(row=1, column=1)
 
         label_long = ttk.Label(popup, text = "Node Longitude: ", font = NORM_FONT, anchor = tk.W)
         entry_long = ttk.Entry(popup)
-        entry_long.insert(0, lng)
+        entry_long.insert(0, active.getLongitude())
         label_long.grid(row=2)
         entry_long.grid(row=2, column=1)
 
         label_lat = ttk.Label(popup, text = "Node Latitude: ", font = NORM_FONT, anchor = tk.W)
         entry_lat = ttk.Entry(popup)
-        entry_lat.insert(0, lat)
+        entry_lat.insert(0, active.getLatitude())
         label_lat.grid(row=3)
         entry_lat.grid(row=3, column=1)
 
-        B1 = ttk.Button(popup, text="Save", command = lambda: savenode(entry_id.get(), entry_name.get(), entry_long.get(), entry_lat.get()))
+        B1 = ttk.Button(popup, text="Save", command = lambda: savenode(active.getID(), entry_id.get(), active.getWidgetId(), entry_name.get(), entry_long.get(), entry_lat.get()))
         B1.grid(row=5, column=0)
-        B2 = ttk.Button(popup, text="Cancel", command = lambda: cancelnode(entry_id.get()))
+        B2 = ttk.Button(popup, text="Cancel", command = popup.destroy)
         B2.grid(row=5, column=1)
 
         entry_name.focus_set()

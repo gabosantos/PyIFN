@@ -1,18 +1,21 @@
 # Creating Node Class
 class Node:
-    def __init__(self, id, name, longitude, latitude):
+    def __init__(self, id, widget_id, name, longitude, latitude):
         self.id = id
+        self.widget_id = widget_id
         self.name = name
         self.long = longitude
         self.lat = latitude
         
-    def moveNode(self, name, longitude, lattitude):
+    def updateNode(self, id, widget_id, name, longitude, latitude):
+        self.id = id
+        self.widget_id = widget_id
         self.name = name
         self.long = longitude
-        self.lat = lattitude
+        self.lat = latitude
         
     def getAllProperties(self):
-        return ("Node Name: ", self.name, "\nLongtitude: ", self.long, "\nLatitude: ", self.lat)
+        return ("Node ID: ", self.id, "\nWidget ID: ", self.widget_id,"Node Name: ", self.name, "\nLongtitude: ", self.long, "\nLatitude: ", self.lat)
     
     def getID(self):
         return int(self.id)
@@ -25,3 +28,6 @@ class Node:
     
     def getLatitude(self):
         return float(self.lat)
+
+    def getWidgetId(self):
+        return int(self.widget_id)

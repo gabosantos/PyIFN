@@ -5,6 +5,7 @@ class Link:
         self.name = name
         self.nodeA = node_A
         self.nodeB = node_B
+        self.direction = ""
         
     def addProperties(self, capacity, distance):
         self.capacity = capacity

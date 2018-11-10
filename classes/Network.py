@@ -12,8 +12,8 @@ class Network:
         self.links = []
 
     # Creates a node in the network and append to Nodes list
-    def createNode(self, id, name, longitude, latitude):
-        self.nodes.append(nd.Node(id, name, longitude, latitude))
+    def createNode(self, id, object_id, name, longitude, latitude):
+        self.nodes.append(nd.Node(id, object_id, name, longitude, latitude))
 
     # Creates link between two nodes in the network and append to Links list
     def createLink(self, id, name, node1, node2):
@@ -83,3 +83,12 @@ class Network:
                 
         self.nodes.remove(self.getNode(delete))
 
+    # Update Node Properties
+    def updateNode(self, active_id, id, object_id, name, longitude, latitude):
+        temp_node = nd.Node(id, object_id, name, longitude, latitude)
+        active_node = self.getNodeById(active_id)
+
+        if (temp_node.getAllProperties() == active_node.getAllProperties()):
+            pass
+        else:
+            active_node.updateNode(id, object_id, name, longitude, latitude)
