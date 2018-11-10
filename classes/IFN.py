@@ -322,7 +322,7 @@ class StartSimulation(tk.Frame):
         frame.pack(fill='both')
 
         self.c = tk.Canvas(master, bg = "white")
-        self.c.pack(fill='both')    
+        self.c.pack(fill='both', expand=True)    
 
         bt = tk.Button(master, text="Print Nodes", command = lambda: self.getNodesList(tk.Tk()))
         bt2 = tk.Button(master, text="Print Links", command = lambda: self.getLinksList())
@@ -339,14 +339,14 @@ class StartSimulation(tk.Frame):
     def getNodesList(self, edit):
         #return self.network.getNodesList()
         #print(self.network.getNodesList())
-
+        
         edit.destroy()
+        
+        nodeslist = self.network.getNodesList()
 
         popup = tk.Tk()
 
         popup.wm_title("Nodes List")
-
-        nodeslist = self.network.getNodesList()
 
         fr_tableheaders = tk.Frame(popup)
 
@@ -365,20 +365,26 @@ class StartSimulation(tk.Frame):
         fr_tableheaders.pack(pady = 10, padx = 10)
         btn = []
         for i in range(len(nodeslist)):
+            nodeID = nodeslist[i].getID()
+            nodeName = nodeslist[i].getName()
+            nodeWidget = nodeslist[i].getWidgetId()
+            nodeLongitude = nodeslist[i].getLongitude()
+            nodeLatitude = nodeslist[i].getLatitude()
+
             tb_nodeID = ttk.Entry(fr_tableheaders)
-            tb_nodeID.insert(0,nodeslist[i].getID())
+            tb_nodeID.insert(0,nodeID)
             tb_nodeID.configure(state="readonly")
 
             tb_nodeName = ttk.Entry(fr_tableheaders)
-            tb_nodeName.insert(0,nodeslist[i].getName())
+            tb_nodeName.insert(0,nodeName)
             tb_nodeName.configure(state="readonly")
 
             tb_nodeLong = ttk.Entry(fr_tableheaders)
-            tb_nodeLong.insert(0,nodeslist[i].getLongitude())
+            tb_nodeLong.insert(0,nodeLongitude)
             tb_nodeLong.configure(state="readonly")
 
             tb_nodeLat = ttk.Entry(fr_tableheaders)
-            tb_nodeLat.insert(0,nodeslist[i].getLatitude())
+            tb_nodeLat.insert(0,nodeLatitude)
             tb_nodeLat.configure(state="readonly")
 
             tb_nodeID.grid(row = i+1, column = 0, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
@@ -387,14 +393,29 @@ class StartSimulation(tk.Frame):
             tb_nodeLat.grid(row = i+1, column = 6, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
 
             fr_actions = tk.Frame(fr_tableheaders)
-            btn.append(tk.Button(fr_actions, text = "Edit", command = lambda c=nodeslist[i].getID(): self.nodePopup(popup,c)))
-            btn[i].pack(padx = 10)
+            btn2 = []
+            btn2.append(tk.Button(fr_actions, text = "Edit", command = lambda c=nodeID: self.nodePopup(popup,c)))
+            btn2.append(tk.Button(fr_actions, text = "Delete", command = lambda c=nodeID: self.deleteNode(popup,c)))
+            btn.append(btn2)
+            btn2[0].grid(row = 0, column = 0, padx = 10)
+            btn2[1].grid(row = 0, column = 1, padx = 10)
             fr_actions.grid(row = i+1, column = 8, columnspan = 2, sticky=(tk.N, tk.E, tk.W), padx = 5)
+
+            self.c.coords(nodeWidget, nodeLongitude-10, nodeLatitude-10, nodeLongitude+10, nodeLatitude+10)
+            self.c.coords(nodeWidget+1, nodeLongitude, nodeLatitude)
 
         fr_tableheaders.pack(pady = 10, padx = 10)
 
         popup.mainloop()
 
+    def deleteNode(self, master, node_id):
+        widgetid = self.network.getNodeById(node_id).getWidgetId()
+        self.c.delete(widgetid)
+        self.c.delete(widgetid+1)
+        self.network.deleteNode(node_id)
+        master.destroy()
+        self.getNodesList(tk.Tk())
+    
     def getLinksList(self):
         #return self.network.getLinksList()
         #print(self.network.getLinksList())
