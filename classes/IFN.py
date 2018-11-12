@@ -714,51 +714,10 @@ class StartSimulation(tk.Frame):
             width = coord[2] - coord[0]
             height = coord[3] - coord[1]
             if(self.c.type(end_widget_node) == "oval"):
-                print(end_node, end_widget_node)
                 end_x = coord[2] - (width / 2)
                 end_y = coord[3] - (height / 2)
-                delta_y = end_y - init_y
-                delta_x = end_x - init_x
-                
-                slope = -(delta_y) / delta_x
-                
-                intercept = (-1 * end_y) - (slope * end_x)
-                
-                end_yy = -1 * end_y
-                
-                # Getting the intersection points between the line segment and the end node
-                a = 1 + slope**2
-                b = (-2 * end_x) + (2 * slope * intercept) - (2 * slope * end_yy)
-                c = end_x**2 + intercept**2 - (2 * intercept * end_yy) + end_yy**2 - 25
-                
-                det = b**2 - 4*a*c
-                
-                if(det >= 0):
-                    x_1 = (-b + (det)**0.5)/(2*a)
-                    x_2 = (-b - (det)**0.5)/(2*a)
-                    
-                    #print("X1: ", x_1, " X2: ", x_2)
-                    
-                    if delta_x > 0:
-                        if init_x < x_1 < end_x:
-                            end_x = x_1 - .5
-                        elif init_x < x_2 < end_x:
-                            end_x = x_2 - .5
-                        else:
-                            pass
-                    elif delta_x < 0:
-                        if end_x < x_1 < init_x:
-                            end_x = x_1 + .5
-                        elif end_x < x_2 < init_x:
-                            end_x = x_2 + .5
-                        else:
-                            pass
-                    else:
-                        pass
-                    
-                    end_y = (slope * end_x) + intercept
-                else:
-                    print("TADA")
+
+                new_x, new_y = self.calculateDelta(init_x, init_y, end_x, end_y)
                 
                 self.c.coords(link_id,init_x, init_y, end_x, -1 * end_y)
                 self.c.tag_lower(link_id)
@@ -803,6 +762,53 @@ class StartSimulation(tk.Frame):
             self.network.updateNodeCoords(int(node_id), event.x, event.y)
         # clear it so you can use it to check if you are draging item
         self.selected = None
+
+    def calculateDelta(self, init_x, init_y, end_x, end_y):
+        delta_y = end_y - init_y
+        delta_x = end_x - init_x
+        
+        slope = -(delta_y) / delta_x
+        
+        intercept = (-1 * end_y) - (slope * end_x)
+        
+        end_yy = -1 * end_y
+        
+        # Getting the intersection points between the line segment and the end node
+        a = 1 + slope**2
+        b = (-2 * end_x) + (2 * slope * intercept) - (2 * slope * end_yy)
+        c = end_x**2 + intercept**2 - (2 * intercept * end_yy) + end_yy**2 - 25
+        
+        det = b**2 - 4*a*c
+        
+        if(det >= 0):
+            x_1 = (-b + (det)**0.5)/(2*a)
+            x_2 = (-b - (det)**0.5)/(2*a)
+            
+            #print("X1: ", x_1, " X2: ", x_2)
+            
+            if delta_x > 0:
+                if init_x < x_1 < end_x:
+                    end_x = x_1 - .5
+                elif init_x < x_2 < end_x:
+                    end_x = x_2 - .5
+                else:
+                    pass
+            elif delta_x < 0:
+                if end_x < x_1 < init_x:
+                    end_x = x_1 + .5
+                elif end_x < x_2 < init_x:
+                    end_x = x_2 + .5
+                else:
+                    pass
+            else:
+                pass
+            
+            end_y = (slope * end_x) + intercept
+        else:
+            print("TADA")
+
+        return end_x, end_y
+                
 
 class SearchLocation(tk.Frame):
     def __init__ (self, parent, controller):
