@@ -719,7 +719,7 @@ class StartSimulation(tk.Frame):
 
                 new_x, new_y = self.calculateDelta(init_x, init_y, end_x, end_y)
                 
-                self.c.coords(link_id,init_x, init_y, end_x, -1 * end_y)
+                self.c.coords(link_id,init_x, init_y, new_x, -1 * new_y)
                 self.c.tag_lower(link_id)
 
                 name = "Link %s" % self.link_ctr
